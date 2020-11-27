@@ -1,0 +1,38 @@
+#include<opencv.hpp>
+#include<stdlib.h>
+#include<string>
+#include<vector>
+#include "operatii.h"
+
+using namespace std;
+using namespace cv;
+
+int main()
+{
+	Mat imgIn = imread("Bokeh 5.jpg", 0);
+	resize(imgIn, imgIn, Size(600, 800));
+	Mat imgOut;
+
+	// Interceptați zona de procesare, luați un valoare pentru lățime și înălțime
+
+	Rect roi = Rect(0, 0, imgIn.cols & -2, imgIn.rows & -2);
+	Mat Hw, h;
+	int R = 5;    // Raza funcției de răspândire a punctului circular PSF
+	int SNR = 35;    // Raportul semnal-zgomot al funcției de distribuire a punctului circular PSF
+
+
+// Creaza o funcție circulară de distribuire a punctelor PSF
+	calcPSF(h, roi.size(), R);
+
+	// Creaza filtru Wiener
+	calcWnrFilter(h, Hw, SNR);
+	
+
+	//namedWindow("input", WINDOW_FREERATIO);
+//	imshow("input", imgIn);
+	//namedWindow("output", WINDOW_FREERATIO);
+//	imshow("output", imgOut);
+
+	waitKey(0);
+	return 0;
+}

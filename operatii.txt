@@ -1,0 +1,58 @@
+#pragma once
+#include <iostream>
+#include "opencv2/imgproc.hpp"
+#include "opencv2/imgcodecs.hpp"
+
+#include<opencv.hpp>
+#include<stdlib.h>
+#include<string>
+#include<vector>
+
+//// Utilizam funcția de răspândire a punctelor atunci când deblurează imaginea defocalizată
+//Dacă debluram imaginea în mișcare, putem utiliza funcția de distribuire a punctelor cu unghi și lungime
+//Unghiul este direcția de mișcare a obiectului, iar lungimea depinde de viteza de mișcare
+void calcPSF(Mat& outputImg, Size filterSize, int R)
+{
+    Mat h(filterSize, CV_32F, Scalar(0));
+    Point point(filterSize.width / 2, filterSize.height / 2);
+    circle(h, point, R, 255, -1, 8);
+    Scalar summa = sum(h);
+    outputImg = h / summa[0];
+}
+
+
+void calcWnrFilter(const Mat& input_h_PSF, Mat& output_G, double snr)
+{
+    Mat h_PSF_shifted;
+    fftshift(input_h_PSF, h_PSF_shifted);
+    Mat planes[2] = { Mat_<float>(h_PSF_shifted.clone()), Mat::zeros(h_PSF_shifted.size(), CV_32F) };
+    Mat complexI;
+    merge(planes, 2, complexI);
+    dft(complexI, complexI);
+    split(complexI, planes);
+    Mat denom;
+    pow(abs(planes[0]), 2, denom);
+    denom += 1.0 / double(snr);
+    divide(planes[0], denom, output_G);
+}
+
+// Rearanjeaza cadranele imaginii Fourier astfel încât originea să fie în centrul imaginii
+void fftshift(const Mat& inputImg, Mat& outputImg)
+{
+    outputImg = inputImg.clone();
+    int cx = outputImg.cols / 2;
+    int cy = outputImg.rows / 2;
+    Mat q0(outputImg, Rect(0, 0, cx, cy));
+    Mat q1(outputImg, Rect(cx, 0, cx, cy));
+    Mat q2(outputImg, Rect(0, cy, cx, cy));
+    Mat q3(outputImg, Rect(cx, cy, cx, cy));
+    Mat tmp;
+    q0.copyTo(tmp);
+    q3.copyTo(q0);
+    tmp.copyTo(q3);
+    q1.copyTo(tmp);
+    q2.copyTo(q1);
+    tmp.copyTo(q2);
+}
+
+
